@@ -82,58 +82,101 @@ class Ablagestapel:
             raise ValueError("No cards left in the discard pile")
         return self.cards.pop()
 
-
-class Player:
-    grid: list[list[Card | None]]
+class Grid:
+    grid_cards: list[list[Card | None]]
+    grid_face_up: list[list[bool]]
 
     def __init__(self):
-        self.grid = [[None for _ in range(4)] for _ in range(3)]
-
+            self.grid_cards = [[None for _ in range(4)] for _ in range(3)]
+            self.grid_face_up = [[False for _ in range(4)] for _ in range(3)]
+    
     def fill_grid(self, cards: list[Card]):
         if len(cards) != 12:
             raise ValueError("Exactly 12 cards are required to fill the grid")
         idx = 0
         for row in range(3):
             for col in range(4):
-                self.grid[row][col] = cards[idx]
+                self.grid_cards[row][col] = cards[idx]
                 idx += 1
 
+    def turn_cards(self, row, column):
+        if not (0 <= row < 3):
+            raise ValueError("Invalid row")
+        if not (0 <= column < 4):
+            raise ValueError("Invalid column")
+        if self.grid_face_up[row][column]:
+            raise ValueError("Card is already face up")
+        self.grid_face_up[row][column] = not self.grid_face_up[row][column]
+
     def display_grid(self):
-        for row in self.grid:
-            print(" | ".join(str(card.value) if card else "None" for card in row))
+        for row in self.grid_cards:
+            print(
+                " | ".join(str(card.value) if card else "None" for card in row)
+            )
+
+    def remove(self, col: int):
+        for row in range(3):
+            self.grid_cards[row][col] = None
+            self.grid_face_up[row][col] = False
+        
+
+
+    def __getitem__(self, key: tuple):
+        """Enable reading: card = grid[row, col]"""
+        row, col = key  # Unpacks tuple (row, col)
+        if not (0 <= row < 3):
+            raise IndexError("Row index out of range")
+        if not (0 <= col < 4):
+            raise IndexError("Column index out of range")
+        return self.grid_cards[row][col]
+    
+    def __setitem__(self, key: tuple, value: Card):
+        """Enable writing: grid[row, col] = card"""
+        row, col = key  # Unpacks tuple (row, col)
+        if not (0 <= row < 3):
+            raise IndexError("Row index out of range")
+        if not (0 <= col < 4):
+            raise IndexError("Column index out of range")
+        self.grid_cards[row][col] = value
+
+class Player:
+    grid: Grid
 
     def place_card(self, row: int, col: int, card: Card) -> Card:
         if 0 > row or row >= 3:
             raise ValueError("Invalid row")
         if 0 > col or col >= 4:
             raise ValueError("Invalid column")
-        return_card = self.grid[row][col]
+        return_card = self.grid[row, col]
         if return_card is None:
             raise ValueError("No card to replace in this position")
-        self.grid[row][col] = card
+        self.grid[row, col] = card
         return return_card
 
     def remove_column(self, col: int):
         if 0 <= col < 4:
             for row in range(3):
-                self.grid[row][col] = None
+                self.grid.remove(col)
         else:
             raise ValueError("Invalid column")
 
 
-def game_init() -> tuple[Deck, Ablagestapel, list[Player]]:
+def game_init(n_player: int) -> tuple[Deck, Ablagestapel, list[Player]]:
     deck = Deck()
     discard_pile = Ablagestapel(deck.draw_card())
-    players = [Player() for _ in range(2)]
+    players = [Player() for _ in range(n_player)]
 
     for player in players:
         initial_cards = [deck.draw_card() for _ in range(12)]
         player.fill_grid(initial_cards)
     return deck, discard_pile, players
 
+def game():
+
+
 
 def main():
-    deck, discard_pile, players = game_init()
+    deck, discard_pile, players = game_init(n_player=4)
 
 
 if __name__ == "__main__":
