@@ -1,6 +1,7 @@
 import random
 
-from main import Game, Player
+from game import Game
+from player import BaselinePlayer, Player
 
 
 class Genome:
@@ -21,7 +22,7 @@ def mutate(g, rate=0.1, sigma=0.1):
     return g
 
 
-def evaluate(genome: Genome, n_games=200):
+def evaluate(genome: Genome, n_games=200) -> float:
     wins = 0
     for _ in range(n_games):
         player = Player(strategy_params=genome.params)  # dein Spieler
