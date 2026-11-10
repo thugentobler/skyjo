@@ -1,4 +1,4 @@
-from game_elements import Ablagestapel, Card, Drawable
+from game_elements import Ablagestapel, Card, Deck, Drawable
 
 
 class Grid:
@@ -57,6 +57,11 @@ class Grid:
             and len({card.value for card in cards if card is not None}) == 1
         )
 
+    def has_grid_columns_with_value(self, card: Card) -> list[int]:
+        for row in range(3):
+            for col in range(4):
+                card = self.grid_cards[row][col]
+
     def _is_column_valid(self, column: int) -> None:
         if not (0 <= column < 4):
             raise ValueError("Invalid column")
@@ -101,7 +106,8 @@ class Player:
         self.grid[row, col] = card
         ablage.add_card(return_card)
 
-    def draw_card(self, deck: Drawable) -> Card:
+    def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        score = self.genome.params[0] * ablagestapel.show_top_card().value + 
         return deck.draw_card()
 
     def remove_column(self, col: int):

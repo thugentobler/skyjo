@@ -5,14 +5,13 @@ from player import Player
 
 
 class Game:
-    def __init__(self):
-        self.players = []
+    def __init__(self, players: list[Player]):
+        self.players = players
         self.deck = Deck()
         self.discard_pile = Ablagestapel()
 
-    def game_init(self, n_player: int) -> None:
+    def game_init(self) -> None:
         self.discard_pile.add_card(self.deck.draw_card())
-        self.players = [Player(f"Player {i+1}") for i in range(n_player)]
 
         for player in self.players:
             initial_cards = [self.deck.draw_card() for _ in range(12)]

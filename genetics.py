@@ -10,11 +10,11 @@ class Genome:
         self.fitness = None
 
 
-def crossover(a, b):
+def crossover(a: Genome, b: Genome) -> Genome:
     return Genome([random.choice(p) for p in zip(a.params, b.params)])
 
 
-def mutate(g, rate=0.1, sigma=0.1):
+def mutate(g: Genome, rate=0.1, sigma=0.1) -> Genome:
     g.params = [
         p + random.gauss(0, sigma) if random.random() < rate else p
         for p in g.params
