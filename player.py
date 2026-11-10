@@ -1,4 +1,5 @@
 from game_elements import Ablagestapel, Card, Deck, Drawable
+from genetics import Genome
 
 
 class Grid:
@@ -57,10 +58,20 @@ class Grid:
             and len({card.value for card in cards if card is not None}) == 1
         )
 
-    def has_grid_columns_with_value(self, card: Card) -> list[int]:
-        for row in range(3):
-            for col in range(4):
-                card = self.grid_cards[row][col]
+    def has_columns_with_same_value(self, card: Card) -> dict[int, int]:
+        matching_columns = {}
+        for col in range(4):
+            cards = [
+                self.grid_cards[row][col]
+                for row in range(3)
+                if self.grid_face_up[row][col]
+            ]
+            if (
+                len({c.value for c in cards if c is not None}) == 1
+                and cards[0] == card
+            ):
+                matching_columns[col] = len(cards)
+        return matching_columns
 
     def _is_column_valid(self, column: int) -> None:
         if not (0 <= column < 4):
@@ -90,10 +101,12 @@ class Grid:
 class Player:
     name: str
     grid: Grid
+    genome: Genome
 
     def __init__(self, name: str):
         self.name = name
         self.grid = Grid()
+        self.genome = Genome()
 
     def fill_grid(self, initial_cards: list[Card]):
         self.grid.fill_grid(initial_cards)
@@ -107,7 +120,13 @@ class Player:
         ablage.add_card(return_card)
 
     def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
-        score = self.genome.params[0] * ablagestapel.show_top_card().value + 
+        top_card = ablagestapel.show_top_card()
+        col_dict = self.grid.has_columns_with_same_value(top_card)
+        score = (
+            top_card * self.genome.params[0]
+            + self.genome.params[1] * len(col_dict)
+            + self.genome.params[2] * sum(col_dict.values())
+        )
         return deck.draw_card()
 
     def remove_column(self, col: int):

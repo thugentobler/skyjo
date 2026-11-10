@@ -35,6 +35,16 @@ class Card:
     def __repr__(self):
         return self.__str__()
 
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return self.value * other
+        return NotImplemented
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Card):
+            return NotImplemented
+        return self.value == value.value and self.color == value.color
+
 
 CARD_DISTRIBUTION = {
     Card(-2, blue): 5,
