@@ -33,7 +33,7 @@ class Card:
         return f"[{self.value:>2}]"
 
     def __repr__(self):
-        return self.__str__()
+        return f"Card[{self.value:>2}]"
 
     def __mul__(self, other):
         if isinstance(other, (int, float)):
@@ -63,6 +63,10 @@ CARD_DISTRIBUTION = {
     Card(11, red): 10,
     Card(12, red): 10,
 }
+
+EXPECTED_CARD_VALUE = sum(
+    card.value * count for card, count in CARD_DISTRIBUTION.items()
+) / sum(CARD_DISTRIBUTION.values())
 
 
 class Drawable(Protocol):

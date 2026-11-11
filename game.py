@@ -26,8 +26,8 @@ class Game:
 
     def round(self):
         for player in self.players:
-            card = player.draw_card(self.deck)
-            player.place_card(0, 1, card, self.discard_pile)
+            card = player.draw_card(self.deck, self.discard_pile)
+            player.place_card(card, self.discard_pile)
 
     def play(self):
         while self.deck.count > 0:
@@ -47,8 +47,8 @@ class Game:
 
 
 def main():
-    game = Game()
-    game.game_init(n_player=4)
+    game = Game([Player(f"Player {i+1}") for i in range(4)])
+    game.game_init()
     print(game)
     game.round()
     print(game)
