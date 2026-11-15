@@ -24,18 +24,34 @@ class Game:
                 col = columns.pop(randint(0, len(columns) - 1))
                 player.grid.flip_card(row, col)
 
-    def round(self):
-        for player in self.players:
-            card = player.draw_card(self.deck, self.discard_pile)
-            player.place_card(card, self.discard_pile)
+    def play(self) -> Player:
+        while True:
+            print(self)
+            for index, player in enumerate(self.players):
+                card = player.draw_card(self.deck, self.discard_pile)
+                player.place_card(card, self.discard_pile)
 
-    def play(self):
-        while self.deck.count > 0:
-            self.round()
+                if player.grid.is_full:
+                    final_players = (
+                        self.players[index + 1 :] + self.players[:index]
+                    )
+
+                    for final_player in final_players:
+                        card = final_player.draw_card(
+                            self.deck, self.discard_pile
+                        )
+                        final_player.place_card(card, self.discard_pile)
+                        final_player.grid.reveal_all()
+
+                    # Return the player with the lowest score
+                    winner = min(
+                        self.players, key=lambda p: p.grid.total_score()
+                    )
+                    print(self._final_score(winner))
+                    return winner
 
     def __str__(self) -> str:
         result = "-" * 10 + "\n"
-        result += "Game: \n"
         # first print the deck size and the ablage size and the value for the ablage
         result += f"Deck count: {self.deck.count} \n"
         result += f"Ablagestapel: {self.discard_pile}\n"
@@ -45,13 +61,21 @@ class Game:
 
         return result
 
+    def _final_score(self, winner: Player) -> str:
+        result = "-" * 10 + "\n"
+        result += "Final scores:\n"
+        print(self)
+        for p in self.players:
+            result += f"{p.name}: {p.grid.total_score()}\n"
+        result += "Winner:\n"
+        result += f"{winner.name}\n"
+        return result
+
 
 def main():
     game = Game([Player(f"Player {i+1}") for i in range(4)])
     game.game_init()
-    print(game)
-    game.round()
-    print(game)
+    game.play()
 
 
 if __name__ == "__main__":

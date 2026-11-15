@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from random import shuffle
 from typing import Protocol
 
+from colorama import Fore
+
 
 @dataclass(frozen=True)
 class Color:
@@ -14,6 +16,14 @@ light_blue = Color("Light Blue", "46d8ec")
 green = Color("Green", "7ddb51")
 yellow = Color("Yellow", "f6ee25")
 red = Color("Red", "e12b2a")
+
+COLOR_MAP = {
+    "Blue": Fore.BLUE,
+    "Light Blue": Fore.CYAN,
+    "Green": Fore.GREEN,
+    "Yellow": Fore.YELLOW,
+    "Red": Fore.RED,
+}
 
 
 @dataclass(frozen=True)
@@ -30,10 +40,10 @@ class Card:
             raise ValueError("Card value must be between -2 and 12")
 
     def __str__(self):
-        return f"[{self.value:>2}]"
+        return f"{COLOR_MAP[self.color.name]}[{self.value:>2}]{Fore.RESET}"
 
     def __repr__(self):
-        return f"Card[{self.value:>2}]"
+        return f"{COLOR_MAP[self.color.name]}Card[{self.value:>2}]{Fore.RESET}"
 
     def __mul__(self, other):
         if isinstance(other, (int, float)):
