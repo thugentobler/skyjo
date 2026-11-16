@@ -51,9 +51,58 @@ class Card:
         return NotImplemented
 
     def __eq__(self, value: object) -> bool:
-        if not isinstance(value, Card):
+        if not isinstance(value, (Card, int)):
             return NotImplemented
-        return self.value == value.value and self.color == value.color
+        if isinstance(value, Card):
+            return self.value == value.value and self.color == value.color
+        if isinstance(value, int):
+            return self.value == value
+        return NotImplemented
+
+    def __lt__(self, other):
+        if not isinstance(other, (Card, int)):
+            return NotImplemented
+        if isinstance(other, Card):
+            return self.value < other.value
+        if isinstance(other, int):
+            return self.value < other
+        return NotImplemented
+
+    def __le__(self, other):
+        if not isinstance(other, (Card, int)):
+            return NotImplemented
+        if isinstance(other, Card):
+            return self.value <= other.value
+        if isinstance(other, int):
+            return self.value <= other
+        return NotImplemented
+
+    def __gt__(self, other):
+        if not isinstance(other, (Card, int)):
+            return NotImplemented
+        if isinstance(other, Card):
+            return self.value > other.value
+        if isinstance(other, int):
+            return self.value > other
+        return NotImplemented
+
+    def __ge__(self, other):
+        if not isinstance(other, (Card, int)):
+            return NotImplemented
+        if isinstance(other, Card):
+            return self.value >= other.value
+        if isinstance(other, int):
+            return self.value >= other
+        return NotImplemented
+
+    def __ne__(self, other):
+        if not isinstance(other, (Card, int)):
+            return NotImplemented
+        if isinstance(other, Card):
+            return self.value != other.value
+        if isinstance(other, int):
+            return self.value != other
+        return NotImplemented
 
 
 CARD_DISTRIBUTION = {
@@ -120,7 +169,8 @@ class Ablagestapel:
     def add_card(self, card: Card):
         self.cards.append(card)
 
-    def show_top_card(self) -> Card:
+    @property
+    def top_card(self) -> Card:
         return self.cards[-1]
 
     def draw_card(self) -> Card:

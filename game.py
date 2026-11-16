@@ -1,7 +1,7 @@
 from random import randint
 
 from game_elements import Ablagestapel, Deck
-from player import Player
+from player import BaselinePlayer, Player, UserPlayer
 
 
 class Game:
@@ -28,6 +28,7 @@ class Game:
         while True:
             print(self)
             for index, player in enumerate(self.players):
+                print(f"--- {player.name}'s turn ---")
                 card = player.draw_card(self.deck, self.discard_pile)
                 player.place_card(card, self.discard_pile)
 
@@ -73,7 +74,18 @@ class Game:
 
 
 def main():
-    game = Game([Player(f"Player {i+1}") for i in range(4)])
+    print("Play yourself? (y/n)")
+    user_input = input().strip().lower()
+    if user_input == "y":
+        print("Enter your username:")
+        username = input().strip()
+    print("How many other players should participate?")
+    num_players = int(input())
+    game = Game([BaselinePlayer(f"Player {i+1}") for i in range(num_players)])
+
+    if user_input == "y":
+        game.players.insert(0, UserPlayer(username))
+
     game.game_init()
     game.play()
 

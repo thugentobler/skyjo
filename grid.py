@@ -27,10 +27,25 @@ class Grid:
             raise ValueError("Exactly 12 cards are required to fill the grid")
         self.grid_cards = np.array(cards, dtype=np.object_).reshape((3, 4))
 
-    def flip_card(self, row, column):
+    def place_card(self, row: int, col: int, card: Card) -> Card:
         self._is_row_valid(row)
-        self._is_column_valid(column)
-        self.grid_face_up[row, column] = True
+        self._is_column_valid(col)
+        return_card = self.grid_cards[row, col]
+        if return_card is None:
+            raise ValueError("Cannot replace an empty grid cell")
+        self.grid_cards[row, col] = card
+        self.flip_card(row, col)
+
+        # Check if a column is now complete and should be removed
+        for c in range(COLS):
+            if self.is_column_removable(c):
+                self.remove_column(c)
+        return return_card
+
+    def flip_card(self, row: int, col: int):
+        self._is_row_valid(row)
+        self._is_column_valid(col)
+        self.grid_face_up[row, col] = True
 
     def display(self) -> str:
         result = ""
@@ -38,9 +53,15 @@ class Grid:
             for col in range(COLS):
                 card = self.grid_cards[row, col]
                 result += (
-                    str(card)
-                    if card and self.grid_face_up[row, col]
-                    else " -- "
+                    " -- "
+                    if col not in self.columns_active
+                    else (
+                        str(card)
+                        if card
+                        and self.grid_face_up[row, col]
+                        and isinstance(card, Card)
+                        else "[  ]"
+                    )
                 )
                 if col < COLS - 1:
                     result += " | "
@@ -53,13 +74,13 @@ class Grid:
 
         self.columns_active = self.columns_active[self.columns_active != col]
         self.grid_cards[:, col] = None
-        self.grid_face_up[:, col] = False
 
     def is_column_removable(self, col: int) -> bool:
         cards = [self.grid_cards[row, col] for row in range(ROWS)]
         return (
             col in self.columns_active
             and all(card is not None for card in cards)
+            and all(self.grid_face_up[row, col] for row in range(ROWS))
             and len({card.value for card in cards if card is not None}) == 1
         )
 
@@ -116,6 +137,17 @@ class Grid:
     def reveal_all(self) -> None:
         self.grid_face_up[:, :] = True
 
+    def first_available_cell(self) -> tuple[int, int]:
+        for row in range(ROWS):
+            for col in range(COLS):
+                if not self.grid_face_up[row, col]:
+                    return row, col
+        raise ValueError("No available cell to place the card")
+
+    @property
+    def is_full(self) -> bool:
+        return bool(self.grid_face_up.all())
+
     def _is_column_valid(self, column: int) -> None:
         if not (0 <= column < COLS):
             raise ValueError("Invalid column")
@@ -125,10 +157,6 @@ class Grid:
     def _is_row_valid(self, row: int) -> None:
         if not (0 <= row < ROWS):
             raise ValueError("Invalid row")
-
-    @property
-    def is_full(self) -> bool:
-        return bool(self.grid_face_up.all())
 
     def __getitem__(self, key: tuple[int, int]) -> Card | None:
         """Enable reading: card = grid[row, col]"""

@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "Debug Game",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/game.py"
+        }
+    ]
+}

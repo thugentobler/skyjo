@@ -16,11 +16,13 @@ class Player:
     name: str
     grid: Grid
     genome: Genome
+    is_user: bool = False
 
     def __init__(self, name: str, genome: Genome | None = None):
         self.name = name
         self.grid = Grid()
         self.genome = genome or Genome()
+        self.is_user = name == "Du"
 
     def fill_grid(self, initial_cards: list[Card]):
         self.grid.fill_grid(initial_cards)
@@ -50,21 +52,10 @@ class Player:
                     return row, col
         raise ValueError("No available cell to place the card")
 
-    def place_card(self, card: Card, ablage: Ablagestapel) -> None:
-        row, col = self._place_decision(card)
-
-        return_card = self.grid[row, col]
-        if return_card is None:
-            raise ValueError("Cannot replace an empty grid cell")
-        self.grid.flip_card(row, col)
-        self.grid[row, col] = card
-        ablage.add_card(return_card)
-
-    def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
-        top_card = ablagestapel.show_top_card()
-        col_dict = self.grid.has_columns_with_same_value(top_card)
+    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        col_dict = self.grid.has_columns_with_same_value(ablagestapel.top_card)
         score = (
-            top_card * self.genome.params.w_topcard
+            ablagestapel.top_card * self.genome.params.w_topcard
             + self.genome.params.w_column_len * len(col_dict)
             + self.genome.params.w_sum_cols * sum(col_dict.values())
         )
@@ -73,14 +64,80 @@ class Player:
         else:
             return deck.draw_card()
 
-    def remove_column(self, col: int):
-        if 0 <= col < 4:
-            for row in range(3):
-                self.grid.remove_column(col)
-        else:
-            raise ValueError("Invalid column")
+    def place_card(self, card: Card, ablage: Ablagestapel) -> None:
+        row, col = self._place_decision(card)
+        print(f"Placing card {card} at row {row+1}, column {col+1}")
+        return_card = self.grid.place_card(row, col, card)
+        print(f"Returned card to ablage: {return_card}")
+        ablage.add_card(return_card)
+
+    def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        print(f"Top card on ablagestapel: {ablagestapel.top_card}")
+        return_card = self._draw_decision(deck, ablagestapel)
+        print(f"Drawn card: {return_card}")
+        return return_card
 
     def display(self) -> str:
         result = f"{self.name}\n"
         result += self.grid.display()
         return result
+
+
+class UserPlayer(Player):
+    def __init__(self, name: str, genome=None):
+        super().__init__(name, genome)
+        self.is_user = True
+
+    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        choice = (
+            input(
+                f"Do you want to take the top card {ablagestapel.top_card}? (y/n): "
+            )
+            .strip()
+            .lower()
+        ) or "y"
+        if choice == "y":
+            return_card = ablagestapel.draw_card()
+        else:
+            return_card = deck.draw_card()
+        print(f"You drew: {return_card}")
+        return return_card
+
+    def _place_decision(self, card: Card) -> tuple[int, int]:
+        # Implement user input logic here
+        # For now, just return the first available cell
+        while True:
+            print("Where do you want to place the card?")
+            row = int(input("Enter row (1-3): ")) - 1
+            col = int(input("Enter column (1-4): ")) - 1
+            try:
+                self.grid._is_row_valid(row)
+                self.grid._is_column_valid(col)
+                return row, col
+            except ValueError as e:
+                print(e)
+
+
+class BaselinePlayer(Player):
+    def __init__(self, name: str, genome=None):
+        super().__init__(name, genome)
+        self.is_user = False
+
+    def _place_decision(self, card: Card) -> tuple[int, int]:
+        # simple place decision: place in the first available cell
+        values = self.grid.grid_values()
+        face_up = self.grid.grid_face_up
+        eligible = face_up & (values > card.value)
+        if np.any(eligible):
+            row, col = np.unravel_index(
+                np.argmax(np.where(eligible, values, -np.inf)), values.shape
+            )
+            return int(row), int(col)
+        return self.grid.first_available_cell()
+
+    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        # simple draw decision based on top card value
+        if ablagestapel.top_card <= 4:
+            return ablagestapel.draw_card()
+        else:
+            return deck.draw_card()
