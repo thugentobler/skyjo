@@ -84,23 +84,23 @@ class Grid:
             and len({card.value for card in cards if card is not None}) == 1
         )
 
-    def _visible_cards_in_column(self, col: int) -> list[Card]:
-        self._is_column_valid(col)
-        cards = [
-            self.grid_cards[row, col]
-            for row in range(ROWS)
-            if self.grid_face_up[row, col]
-        ]
-        return [card for card in cards if card is not None]
+    # def _visible_cards_in_column(self, col: int) -> list[Card]:
+    #     self._is_column_valid(col)
+    #     cards = [
+    #         self.grid_cards[row, col]
+    #         for row in range(ROWS)
+    #         if self.grid_face_up[row, col]
+    #     ]
+    #     return [card for card in cards if card is not None]
 
-    def has_columns_with_same_value(self, card: Card) -> dict[int, int]:
-        matching_columns = {}
-        for col in range(COLS):
-            cards = self._visible_cards_in_column(col)
-            # checks if all visible cards in the column are the same and match the given card
-            if len(set(cards)) == 1 and cards[0] == card:
-                matching_columns[col] = len(cards)
-        return matching_columns
+    # def get_matching_columns_count(self, card: Card) -> dict[int, int]:
+    #     matching_columns = {}
+    #     for col in range(COLS):
+    #         cards = self._visible_cards_in_column(col)
+    #         # checks if all visible cards in the column are the same and match the given card
+    #         if len(set(cards)) == 1 and cards[0] == card:
+    #             matching_columns[col] = len(cards)
+    #     return matching_columns
 
     # def count_cards_by_column(self) -> dict[int, dict[Card, int]]:
     #     """Count visible cards by value in each active column."""
@@ -113,26 +113,30 @@ class Grid:
     #         counts[int(col)] = column_counts
     #     return counts
 
-    def grid_values(self, with_face_down: bool = True) -> NDArray[np.int64]:
+    def _values(self, with_face_down: bool = True) -> NDArray[np.int64]:
         values = np.full((ROWS, COLS), EXPECTED_CARD_VALUE, dtype=np.int64)
         if not with_face_down:
             values = np.full((ROWS, COLS), np.nan, dtype=np.int64)
         for row, col in np.ndindex(values.shape):
             card = self.grid_cards[row, col]
-            if self.grid_face_up[row, col] and isinstance(card, Card):
+            if (
+                self.grid_face_up[row, col]
+                and isinstance(card, Card)
+                and card is not None
+            ):
                 values[row, col] = card.value
         return values
 
     def total_score(self) -> int:
-        return int(np.nansum(self.grid_values(with_face_down=False)))
+        return int(np.nansum(self._values(with_face_down=False)))
 
-    def _column_sums(self, with_face_down: bool = True) -> NDArray[np.float64]:
-        return np.array(
-            [
-                sum(self.grid_values(with_face_down=with_face_down)[:, col])
-                for col in range(COLS)
-            ]
-        )
+    # def _column_sums(self, with_face_down: bool = True) -> NDArray[np.float64]:
+    #     return np.array(
+    #         [
+    #             sum(self._grid_values(with_face_down=with_face_down)[:, col])
+    #             for col in range(COLS)
+    #         ]
+    #     )
 
     def reveal_all(self) -> None:
         self.grid_face_up[:, :] = True

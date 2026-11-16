@@ -28,24 +28,9 @@ class Player:
         self.grid.fill_grid(initial_cards)
 
     def _place_decision(self, card: Card) -> tuple[int, int]:
+
         # Implement your decision logic here
         # For now, just return the first available cell
-        gain: np.ndarray = self.grid.grid_values() - np.full(
-            (ROWS, COLS), card.value, dtype=np.int64
-        )
-        column_match = self.grid.has_columns_with_same_value(card)
-        column_gain = self.grid.grid_values(with_face_down=False)
-        reveals_info = self.grid.grid_face_up
-        # column_counts = self.grid.count_cards_by_column()
-        # breaks_match = np.zeros(self.grid.grid_cards.shape, dtype=np.int_)
-        # for col, counts in column_counts.items():
-        #     for row in np.flatnonzero(self.grid.grid_face_up[:, col]):
-        #         card = self.grid[row, col]
-        #         if card is not None and counts.get(card, 0) >= 2:
-        #             breaks_match[row, col] = 1
-
-        gain_score = np.max(gain) * self.genome.params.w_gain
-
         for row in range(ROWS):
             for col in range(COLS):
                 if not self.grid.grid_face_up[row][col]:
@@ -53,11 +38,26 @@ class Player:
         raise ValueError("No available cell to place the card")
 
     def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
-        col_dict = self.grid.has_columns_with_same_value(ablagestapel.top_card)
+        # col_dict = self.grid.get_matching_columns_count(ablagestapel.top_card)
         score = (
-            ablagestapel.top_card * self.genome.params.w_topcard
-            + self.genome.params.w_column_len * len(col_dict)
-            + self.genome.params.w_sum_cols * sum(col_dict.values())
+            self.genome.params.w_topcard * ablagestapel.top_card.value
+            + self.genome.params.w_count
+            * np.count_nonzero(self.grid._values() == ablagestapel.top_card)
+            + self.genome.params.w_col_count
+            * np.count_nonzero(
+                np.sum(
+                    self.grid._values() == ablagestapel.top_card,
+                    axis=0,
+                )
+                >= 2
+            )
+            + self.genome.params.w_gain_topcard
+            * np.max(
+                self.grid._values()
+                - np.full_like(
+                    self.grid._values(), ablagestapel.top_card.value
+                )
+            )
         )
         if score >= self.genome.params.take_discard_thresh:
             return ablagestapel.draw_card()
@@ -125,7 +125,7 @@ class BaselinePlayer(Player):
 
     def _place_decision(self, card: Card) -> tuple[int, int]:
         # simple place decision: place in the first available cell
-        values = self.grid.grid_values()
+        values = self.grid._values()
         face_up = self.grid.grid_face_up
         eligible = face_up & (values > card.value)
         if np.any(eligible):
