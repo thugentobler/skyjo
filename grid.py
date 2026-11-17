@@ -84,6 +84,8 @@ class Grid:
             and len({card.value for card in cards if card is not None}) == 1
         )
 
+    # Function for the genome to evaluate potential moves based on different criteria
+
     def _gain(self, card: Card) -> NDArray[np.int64]:
         gains = np.full((ROWS, COLS), card.value, dtype=np.int64)
         values = self._values(with_face_down=True)
@@ -99,21 +101,26 @@ class Grid:
             for row in range(ROWS):
                 temp = self.grid_cards.copy()
                 temp[row, col] = card
-                cards = [temp[r, col] for r in range(ROWS)]
+                cards_of_col = [temp[r, col] for r in range(ROWS)]
                 if (
                     col in self.columns_active
-                    and all(card is not None for card in cards)
-                    and all(self.grid_face_up[r, col] for r in range(ROWS))
-                    and len({card.value for card in cards if card is not None})
+                    and all(card is not None for card in cards_of_col)
+                    and all(
+                        self.grid_face_up[r, col]
+                        for r in range(ROWS)
+                        if r != row
+                    )
+                    and len(
+                        {
+                            card.value
+                            for card in cards_of_col
+                            if card is not None
+                        }
+                    )
                     == 1
                 ):
                     col_bonus[row, col] = 1
         return col_bonus
-
-        # cards_match = self.grid_cards == card
-        # mask = np.array([self.is_column_removable(i) for i in range(COLS)], dtype=int)
-        # striped = np.broadcast_to(mask, self.grid_cards.shape)
-        # return (cards_match & striped & self.grid_face_up).astype(np.int64)
 
     def _reveal(self, card: Card) -> NDArray[np.int64]:
         return np.where(self.grid_face_up, 1, 0)

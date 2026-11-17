@@ -28,14 +28,17 @@ class Player:
         self.grid.fill_grid(initial_cards)
 
     def _place_decision(self, card: Card) -> tuple[int, int]:
-
-        # Implement your decision logic here
-        # For now, just return the first available cell
-        for row in range(ROWS):
-            for col in range(COLS):
-                if not self.grid.grid_face_up[row][col]:
-                    return row, col
-        raise ValueError("No available cell to place the card")
+        # TODO: include next player
+        # TODO: option to put picked card to ablage and turn one card in the grid face up
+        score = (
+            self.genome.params.w_gain * self.grid._gain(card)
+            + self.genome.params.w_match * self.grid._match(card)
+            + self.genome.params.w_col_bonus * self.grid._col_bonus(card)
+            + self.genome.params.w_reveal * self.grid._reveal(card)
+            + self.genome.params.w_breaks_match * self.grid._breaks_match(card)
+        )
+        row, col = np.unravel_index(np.argmax(score), score.shape)
+        return int(row), int(col)
 
     def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
         # col_dict = self.grid.get_matching_columns_count(ablagestapel.top_card)
