@@ -16,6 +16,8 @@ class Params:
         self.w_col_bonus = random.uniform(0, 1)
         self.w_reveal = random.uniform(0, 1)
         self.w_breaks_match = random.uniform(0, 1)
+        self.place_card_thresh = random.uniform(0, 1)
+        self.w_gain_next_player = random.uniform(0, 1)
 
     def __iter__(self):
         return iter(vars(self))

@@ -31,11 +31,11 @@ def evaluate(genome: Genome, n_games=200) -> float:
     return wins / n_games
 
 
-def tournament(pop, k=3):
+def select_fittest(pop, k=3):
     return max(random.sample(pop, k), key=lambda g: g.fitness)
 
 
-def evolve(pop_size=50, generations=40):
+def evolve(pop_size=50, generations=1):
     population = [Genome() for _ in range(pop_size)]
     for generation in range(generations):
         for genome in population:
@@ -44,8 +44,17 @@ def evolve(pop_size=50, generations=40):
         print(generation, population[0].fitness)
         elite = population[:2]
         children = [
-            mutate(crossover(tournament(population), tournament(population)))
+            mutate(
+                crossover(
+                    select_fittest(population), select_fittest(population)
+                )
+            )
             for _ in range(pop_size - len(elite))
         ]
         population = elite + children
     return population[0]
+
+
+if __name__ == "__main__":
+    best_genome = evolve()
+    print("Best genome fitness:", best_genome.fitness)

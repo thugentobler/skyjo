@@ -10,7 +10,6 @@ class Game:
         self.deck = Deck()
         self.discard_pile = Ablagestapel()
 
-    def game_init(self) -> None:
         self.discard_pile.add_card(self.deck.draw_card())
 
         for player in self.players:
@@ -30,7 +29,10 @@ class Game:
             for index, player in enumerate(self.players):
                 print(f"--- {player.name}'s turn ---")
                 card = player.draw_card(self.deck, self.discard_pile)
-                player.place_card(card, self.discard_pile)
+                next_player = self.players[(index + 1) % len(self.players)]
+                player.place_card(
+                    card, self.discard_pile, next_player.grid_view()
+                )
 
                 if player.grid.is_full:
                     final_players = (
@@ -41,7 +43,13 @@ class Game:
                         card = final_player.draw_card(
                             self.deck, self.discard_pile
                         )
-                        final_player.place_card(card, self.discard_pile)
+                        next_player = self.players[
+                            (self.players.index(final_player) + 1)
+                            % len(self.players)
+                        ]
+                        final_player.place_card(
+                            card, self.discard_pile, next_player.grid_view()
+                        )
                         final_player.grid.reveal_all()
 
                     # Return the player with the lowest score
@@ -74,19 +82,16 @@ class Game:
 
 
 def main():
-    print("Play yourself? (y/n)")
-    user_input = input().strip().lower()
-    if user_input == "y":
-        print("Enter your username:")
-        username = input().strip()
+    print("Enter your username:")
+    username = input().strip()
     print("How many other players should participate?")
     num_players = int(input())
-    game = Game([BaselinePlayer(f"Player {i+1}") for i in range(num_players)])
+    players: list[Player] = [
+        BaselinePlayer(f"Player {i+1}") for i in range(num_players)
+    ]
+    players.append(UserPlayer(username))
 
-    if user_input == "y":
-        game.players.insert(0, UserPlayer(username))
-
-    game.game_init()
+    game = Game(players)
     game.play()
 
 

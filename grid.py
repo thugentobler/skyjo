@@ -129,6 +129,18 @@ class Grid:
         cards_match = self.grid_cards == card
         return ((~cards_match) & self.grid_face_up).astype(np.int64)
 
+    def _gain_next_player(
+        self, card: Card, next_player_grid: NDArray[np.int64]
+    ) -> NDArray[np.int64]:
+        gains = np.zeros((ROWS, COLS), dtype=np.int64)
+        for row, col in np.ndindex(self.grid_cards.shape):
+            discard_card_value = self.grid_cards[row, col]
+            temp = next_player_grid.copy()
+            temp[row, col] = discard_card_value
+            if np.all(temp[:, col] != EXPECTED_CARD_VALUE):
+                gains[row, col] = 1
+        return gains
+
     # def _visible_cards_in_column(self, col: int) -> list[Card]:
     #     self._is_column_valid(col)
     #     cards = [
@@ -212,6 +224,8 @@ class Grid:
         row, col = key
         self._is_column_valid(col)
         self._is_row_valid(row)
+        if not self.grid_face_up[row, col]:
+            return None
         return cast(Card | None, self.grid_cards[row, col])
 
     def __setitem__(self, key: tuple[int, int], value: Card | None) -> None:

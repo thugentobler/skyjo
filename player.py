@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 
 from game_elements import (
     Ablagestapel,
@@ -27,16 +28,32 @@ class Player:
     def fill_grid(self, initial_cards: list[Card]):
         self.grid.fill_grid(initial_cards)
 
-    def _place_decision(self, card: Card) -> tuple[int, int]:
-        # TODO: include next player
-        # TODO: option to put picked card to ablage and turn one card in the grid face up
+    def _place_decision(
+        self, card: Card, next_player_grid: NDArray[np.int64]
+    ) -> tuple[int, int]:
         score = (
             self.genome.params.w_gain * self.grid._gain(card)
             + self.genome.params.w_match * self.grid._match(card)
             + self.genome.params.w_col_bonus * self.grid._col_bonus(card)
             + self.genome.params.w_reveal * self.grid._reveal(card)
             + self.genome.params.w_breaks_match * self.grid._breaks_match(card)
+            + self.genome.params.w_gain_next_player
+            * self.grid._gain_next_player(card, next_player_grid)
         )
+        # TODO: refine _gain_next_player calculation
+
+        if score < self.genome.params.place_card_thresh:
+            # If the score is below the threshold, choose a random face-down card
+            # TODO: refine the choosing of the face down position to turn up
+            face_down_positions = [
+                (r, c)
+                for r in range(ROWS)
+                for c in range(COLS)
+                if not self.grid.grid_face_up[r, c]
+            ]
+            if face_down_positions:
+                return face_down_positions[0]
+
         row, col = np.unravel_index(np.argmax(score), score.shape)
         return int(row), int(col)
 
@@ -67,8 +84,13 @@ class Player:
         else:
             return deck.draw_card()
 
-    def place_card(self, card: Card, ablage: Ablagestapel) -> None:
-        row, col = self._place_decision(card)
+    def place_card(
+        self,
+        card: Card,
+        ablage: Ablagestapel,
+        next_player_grid: NDArray[np.int64],
+    ) -> None:
+        row, col = self._place_decision(card, next_player_grid)
         print(f"Placing card {card} at row {row+1}, column {col+1}")
         return_card = self.grid.place_card(row, col, card)
         print(f"Returned card to ablage: {return_card}")
@@ -84,6 +106,9 @@ class Player:
         result = f"{self.name}\n"
         result += self.grid.display()
         return result
+
+    def grid_view(self) -> NDArray[np.int64]:
+        return self.grid._values(False)
 
 
 class UserPlayer(Player):
