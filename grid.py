@@ -15,12 +15,12 @@ COLS: int = 4
 class Grid:
     grid_cards: NDArray[np.object_]
     grid_face_up: NDArray[np.bool_]
-    columns_active: NDArray[np.int_]
+    columns_active: NDArray[np.bool_]
 
     def __init__(self):
         self.grid_cards = np.full((ROWS, COLS), None, dtype=np.object_)
         self.grid_face_up = np.zeros((ROWS, COLS), dtype=np.bool_)
-        self.columns_active = np.arange(COLS, dtype=np.int_)
+        self.columns_active = np.ones(COLS, dtype=np.bool_)
 
     def fill_grid(self, cards: list[Card]):
         if len(cards) != 12:
@@ -54,7 +54,7 @@ class Grid:
                 card = self.grid_cards[row, col]
                 result += (
                     " -- "
-                    if col not in self.columns_active
+                    if not self.columns_active[col]
                     else (
                         str(card)
                         if card
@@ -72,13 +72,13 @@ class Grid:
         if not self.is_column_removable(col):
             raise ValueError("Column is not removable")
 
-        self.columns_active = self.columns_active[self.columns_active != col]
+        self.columns_active[col] = False
         self.grid_cards[:, col] = None
 
     def is_column_removable(self, col: int) -> bool:
         cards = [self.grid_cards[row, col] for row in range(ROWS)]
         return (
-            col in self.columns_active
+            self.columns_active[col]
             and all(card is not None for card in cards)
             and all(self.grid_face_up[row, col] for row in range(ROWS))
             and len({card.value for card in cards if card is not None}) == 1
@@ -103,7 +103,7 @@ class Grid:
                 temp[row, col] = card
                 cards_of_col = [temp[r, col] for r in range(ROWS)]
                 if (
-                    col in self.columns_active
+                    self.columns_active[col]
                     and all(card is not None for card in cards_of_col)
                     and all(
                         self.grid_face_up[r, col]
@@ -134,41 +134,16 @@ class Grid:
     ) -> NDArray[np.int64]:
         gains = np.zeros((ROWS, COLS), dtype=np.int64)
         for row, col in np.ndindex(self.grid_cards.shape):
-            discard_card_value = self.grid_cards[row, col]
+            discard_card = self.grid_cards[row, col]
             temp = next_player_grid.copy()
-            temp[row, col] = discard_card_value
+            temp[row, col] = (
+                discard_card.value
+                if isinstance(discard_card, Card)
+                else EXPECTED_CARD_VALUE
+            )
             if np.all(temp[:, col] != EXPECTED_CARD_VALUE):
                 gains[row, col] = 1
         return gains
-
-    # def _visible_cards_in_column(self, col: int) -> list[Card]:
-    #     self._is_column_valid(col)
-    #     cards = [
-    #         self.grid_cards[row, col]
-    #         for row in range(ROWS)
-    #         if self.grid_face_up[row, col]
-    #     ]
-    #     return [card for card in cards if card is not None]
-
-    # def get_matching_columns_count(self, card: Card) -> dict[int, int]:
-    #     matching_columns = {}
-    #     for col in range(COLS):
-    #         cards = self._visible_cards_in_column(col)
-    #         # checks if all visible cards in the column are the same and match the given card
-    #         if len(set(cards)) == 1 and cards[0] == card:
-    #             matching_columns[col] = len(cards)
-    #     return matching_columns
-
-    # def count_cards_by_column(self) -> dict[int, dict[Card, int]]:
-    #     """Count visible cards by value in each active column."""
-    #     counts = np.zeros(self.grid_cards.shape)
-
-    #     for col in self.columns_active:
-    #         column_counts = {}
-    #         for card in self._visible_cards_in_column(int(col)):
-    #             column_counts[card] = column_counts.get(card, 0) + 1
-    #         counts[int(col)] = column_counts
-    #     return counts
 
     def _values(self, with_face_down: bool = True) -> NDArray[np.int64]:
         values = np.full((ROWS, COLS), EXPECTED_CARD_VALUE, dtype=np.int64)
@@ -176,24 +151,12 @@ class Grid:
             values = np.full((ROWS, COLS), np.nan, dtype=np.int64)
         for row, col in np.ndindex(values.shape):
             card = self.grid_cards[row, col]
-            if (
-                self.grid_face_up[row, col]
-                and isinstance(card, Card)
-                and card is not None
-            ):
+            if self.grid_face_up[row, col] and isinstance(card, Card):
                 values[row, col] = card.value
         return values
 
     def total_score(self) -> int:
         return int(np.nansum(self._values(with_face_down=False)))
-
-    # def _column_sums(self, with_face_down: bool = True) -> NDArray[np.float64]:
-    #     return np.array(
-    #         [
-    #             sum(self._grid_values(with_face_down=with_face_down)[:, col])
-    #             for col in range(COLS)
-    #         ]
-    #     )
 
     def reveal_all(self) -> None:
         self.grid_face_up[:, :] = True
@@ -212,7 +175,7 @@ class Grid:
     def _is_column_valid(self, column: int) -> None:
         if not (0 <= column < COLS):
             raise ValueError("Invalid column")
-        if not column in self.columns_active:
+        if not self.columns_active[column]:
             raise ValueError("Column is not active")
 
     def _is_row_valid(self, row: int) -> None:

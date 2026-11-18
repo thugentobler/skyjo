@@ -1,5 +1,6 @@
 from random import randint
 
+import config
 from game_elements import Ablagestapel, Deck
 from player import BaselinePlayer, Player, UserPlayer
 
@@ -25,9 +26,11 @@ class Game:
 
     def play(self) -> Player:
         while True:
-            print(self)
+            if config.DISPLAY_GAME:
+                print(self)
             for index, player in enumerate(self.players):
-                print(f"--- {player.name}'s turn ---")
+                if config.DISPLAY_GAME:
+                    print(f"--- {player.name}'s turn ---")
                 card = player.draw_card(self.deck, self.discard_pile)
                 next_player = self.players[(index + 1) % len(self.players)]
                 player.place_card(
@@ -47,6 +50,8 @@ class Game:
                             (self.players.index(final_player) + 1)
                             % len(self.players)
                         ]
+                        if config.DISPLAY_GAME:
+                            print(f"--- {final_player.name}'s turn ---")
                         final_player.place_card(
                             card, self.discard_pile, next_player.grid_view()
                         )
@@ -56,7 +61,8 @@ class Game:
                     winner = min(
                         self.players, key=lambda p: p.grid.total_score()
                     )
-                    print(self._final_score(winner))
+                    if config.DISPLAY_GAME:
+                        print(self._final_score(winner))
                     return winner
 
     def __str__(self) -> str:
