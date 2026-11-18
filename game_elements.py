@@ -51,56 +51,44 @@ class Card:
         return NotImplemented
 
     def __eq__(self, value: object) -> bool:
-        if not isinstance(value, (Card, int)):
-            return NotImplemented
         if isinstance(value, Card):
             return self.value == value.value and self.color == value.color
-        if isinstance(value, int):
+        if isinstance(value, (int, float)):
             return self.value == value
         return NotImplemented
 
     def __lt__(self, other):
-        if not isinstance(other, (Card, int)):
-            return NotImplemented
         if isinstance(other, Card):
             return self.value < other.value
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             return self.value < other
         return NotImplemented
 
     def __le__(self, other):
-        if not isinstance(other, (Card, int)):
-            return NotImplemented
         if isinstance(other, Card):
             return self.value <= other.value
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             return self.value <= other
         return NotImplemented
 
     def __gt__(self, other):
-        if not isinstance(other, (Card, int)):
-            return NotImplemented
         if isinstance(other, Card):
             return self.value > other.value
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             return self.value > other
         return NotImplemented
 
     def __ge__(self, other):
-        if not isinstance(other, (Card, int)):
-            return NotImplemented
         if isinstance(other, Card):
             return self.value >= other.value
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             return self.value >= other
         return NotImplemented
 
     def __ne__(self, other):
-        if not isinstance(other, (Card, int)):
-            return NotImplemented
         if isinstance(other, Card):
             return self.value != other.value
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             return self.value != other
         return NotImplemented
 
