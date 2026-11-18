@@ -86,8 +86,8 @@ class Grid:
 
     # Function for the genome to evaluate potential moves based on different criteria
 
-    def _gain(self, card: Card) -> NDArray[np.int64]:
-        gains = np.full((ROWS, COLS), card.value, dtype=np.int64)
+    def _gain(self, card: Card) -> NDArray[np.float64]:
+        gains = np.full((ROWS, COLS), card.value, dtype=np.float64)
         values = self._values(with_face_down=True)
         return gains - values
 
@@ -130,7 +130,7 @@ class Grid:
         return ((~cards_match) & self.grid_face_up).astype(np.int64)
 
     def _gain_next_player(
-        self, card: Card, next_player_grid: NDArray[np.int64]
+        self, card: Card, next_player_grid: NDArray[np.float64]
     ) -> NDArray[np.int64]:
         gains = np.zeros((ROWS, COLS), dtype=np.int64)
         for row, col in np.ndindex(self.grid_cards.shape):
@@ -145,10 +145,10 @@ class Grid:
                 gains[row, col] = 1
         return gains
 
-    def _values(self, with_face_down: bool = True) -> NDArray[np.int64]:
-        values = np.full((ROWS, COLS), EXPECTED_CARD_VALUE, dtype=np.int64)
+    def _values(self, with_face_down: bool = True) -> NDArray[np.float64]:
+        values = np.full((ROWS, COLS), EXPECTED_CARD_VALUE, dtype=np.float64)
         if not with_face_down:
-            values = np.full((ROWS, COLS), np.nan, dtype=np.int64)
+            values = np.full((ROWS, COLS), np.nan, dtype=np.float64)
         for row, col in np.ndindex(values.shape):
             card = self.grid_cards[row, col]
             if self.grid_face_up[row, col] and isinstance(card, Card):

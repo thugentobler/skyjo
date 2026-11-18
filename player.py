@@ -30,7 +30,7 @@ class Player:
         self.grid.fill_grid(initial_cards)
 
     def _place_decision(
-        self, card: Card, next_player_grid: NDArray[np.int64]
+        self, card: Card, next_player_grid: NDArray[np.float64]
     ) -> tuple[int, int]:
         score = (
             self.genome.params.w_gain * self.grid._gain(card)
@@ -38,7 +38,7 @@ class Player:
             + self.genome.params.w_col_bonus * self.grid._col_bonus(card)
             + self.genome.params.w_reveal * self.grid._reveal(card)
             + self.genome.params.w_breaks_match * self.grid._breaks_match(card)
-            + self.genome.params.w_gain_next_player
+            - self.genome.params.w_gain_next_player
             * self.grid._gain_next_player(card, next_player_grid)
         )
         # TODO: refine _gain_next_player calculation
@@ -92,7 +92,7 @@ class Player:
         self,
         card: Card,
         ablage: Ablagestapel,
-        next_player_grid: NDArray[np.int64],
+        next_player_grid: NDArray[np.float64],
     ) -> None:
         row, col = self._place_decision(card, next_player_grid)
         if config.DISPLAY_GAME:
@@ -115,7 +115,7 @@ class Player:
         result += self.grid.display()
         return result
 
-    def grid_view(self) -> NDArray[np.int64]:
+    def grid_view(self) -> NDArray[np.float64]:
         return self.grid._values(False)
 
 
@@ -141,7 +141,7 @@ class UserPlayer(Player):
         return return_card
 
     def _place_decision(
-        self, card: Card, next_player_grid: NDArray[np.int64]
+        self, card: Card, next_player_grid: NDArray[np.float64]
     ) -> tuple[int, int]:
         # Implement user input logic here
         # For now, just return the first available cell
@@ -162,8 +162,15 @@ class BaselinePlayer(Player):
         super().__init__(name, genome)
         self.is_user = False
 
+    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+        # simple draw decision based on top card value
+        if ablagestapel.top_card <= 4:
+            return ablagestapel.draw_card()
+        else:
+            return deck.draw_card()
+
     def _place_decision(
-        self, card: Card, next_player_grid: NDArray[np.int64]
+        self, card: Card, next_player_grid: NDArray[np.float64]
     ) -> tuple[int, int]:
         # simple place decision: place in the first available cell
         values = self.grid._values()
@@ -176,10 +183,3 @@ class BaselinePlayer(Player):
             )
             return int(row), int(col)
         return self.grid.first_available_cell()
-
-    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
-        # simple draw decision based on top card value
-        if ablagestapel.top_card <= 4:
-            return ablagestapel.draw_card()
-        else:
-            return deck.draw_card()

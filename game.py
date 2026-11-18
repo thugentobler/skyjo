@@ -1,7 +1,10 @@
+import glob
+import os
 from random import randint
 
 import config
 from game_elements import Ablagestapel, Deck
+from genome import Genome
 from player import BaselinePlayer, Player, UserPlayer
 
 
@@ -87,13 +90,25 @@ class Game:
         return result
 
 
+def load_latest_genome() -> Genome:
+
+    files = glob.glob("./genomes/*.json")
+    if not files:
+        return Genome()
+    latest_file = max(files, key=os.path.getctime)
+    genome = Genome()
+    genome.load(latest_file)
+    return genome
+
+
 def main():
     print("Enter your username:")
     username = input().strip()
     print("How many other players should participate?")
     num_players = int(input())
     players: list[Player] = [
-        BaselinePlayer(f"Player {i+1}") for i in range(num_players)
+        Player(f"Player {i+1}", load_latest_genome())
+        for i in range(num_players)
     ]
     players.append(UserPlayer(username))
 
