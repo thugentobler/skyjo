@@ -1,3 +1,5 @@
+import json
+import os
 import random
 
 
@@ -29,3 +31,14 @@ class Genome:
     def __init__(self):
         self.params = Params()
         self.fitness = 0.0
+
+    def save(self, filepath: str):
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w") as f:
+            json.dump(vars(self.params), f)
+
+    def load(self, filepath: str):
+        with open(filepath, "r") as f:
+            params_dict = json.load(f)
+        for key, value in params_dict.items():
+            setattr(self.params, key, value)
