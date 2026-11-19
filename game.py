@@ -5,7 +5,7 @@ from random import randint
 import config
 from game_elements import Ablagestapel, Deck
 from genome import Genome
-from player import BaselinePlayer, Player, UserPlayer
+from player import Player, UserPlayer
 
 
 class Game:
@@ -29,11 +29,10 @@ class Game:
 
     def play(self) -> Player:
         while True:
-            if config.DISPLAY_GAME:
-                print(self)
             for index, player in enumerate(self.players):
                 if config.DISPLAY_GAME:
                     print(f"--- {player.name}'s turn ---")
+                    print(self)
                 card = player.draw_card(self.deck, self.discard_pile)
                 next_player = self.players[(index + 1) % len(self.players)]
                 player.place_card(
@@ -102,11 +101,17 @@ def load_latest_genome() -> Genome:
 
 
 def main():
-    print("Enter your username:")
-    username = input().strip()
+    print("Welcome to Skyjo!")
+    print("How many human players will participate?")
+    num_human_players = int(input())
+    players: list[Player] = []
+    for i in range(num_human_players):
+        print(f"Enter username for human player {i+1}:")
+        username = input().strip()
+        players.append(UserPlayer(username))
     print("How many other players should participate?")
     num_players = int(input())
-    players: list[Player] = [
+    players += [
         Player(f"Player {i+1}", load_latest_genome())
         for i in range(num_players)
     ]

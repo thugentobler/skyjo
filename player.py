@@ -46,22 +46,25 @@ class Player:
         # mask off the inactive columns
         score[:, ~self.grid.columns_active] = -np.inf
 
-        if np.max(score) < self.genome.params.place_card_thresh:
-            # If the score is below the threshold, choose a random face-down card
-            # TODO: refine the choosing of the face down position to turn up
-            face_down_positions = [
-                (r, c)
-                for r in range(ROWS)
-                for c in range(COLS)
-                if not self.grid.grid_face_up[r, c]
-            ]
-            if face_down_positions:
-                return face_down_positions[0]
-
         row, col = np.unravel_index(np.argmax(score), score.shape)
         return int(row), int(col)
 
-    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+    def _turn_over_decision(self) -> None:
+        # TODO: refine the choosing of the face down position to turn up
+
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.grid.is_face_down_and_active(row, col):
+                    self.grid.flip_card(row, col)
+                    if config.DISPLAY_GAME:
+                        print(
+                            f"Turned over card at row {row+1}, column {col+1}"
+                        )
+                    return
+
+    def _draw_decision(
+        self, deck: Deck, ablagestapel: Ablagestapel
+    ) -> Card | None:
         # col_dict = self.grid.get_matching_columns_count(ablagestapel.top_card)
         score = (
             self.genome.params.w_topcard * ablagestapel.top_card.value
@@ -83,17 +86,26 @@ class Player:
                 )
             )
         )
-        if score >= self.genome.params.take_discard_thresh:
+        if score >= self.genome.params.take_ablagestapel_thresh:
             return ablagestapel.draw_card()
         else:
-            return deck.draw_card()
+            return_card = deck.draw_card()
+            # TODO: value the drawn card against the current grid state
+            if score > self.genome.params.discard_thresh:
+                # If the score is above the threshold, keep the card
+                return return_card
+            return None
 
     def place_card(
         self,
-        card: Card,
+        card: Card | None,
         ablage: Ablagestapel,
         next_player_grid: NDArray[np.float64],
     ) -> None:
+        if card is None:
+            self._turn_over_decision()
+            return
+
         row, col = self._place_decision(card, next_player_grid)
         if config.DISPLAY_GAME:
             print(f"Placing card {card} at row {row+1}, column {col+1}")
@@ -102,7 +114,7 @@ class Player:
             print(f"Returned card to ablage: {return_card}")
         ablage.add_card(return_card)
 
-    def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+    def draw_card(self, deck: Deck, ablagestapel: Ablagestapel) -> Card | None:
         if config.DISPLAY_GAME:
             print(f"Top card on ablagestapel: {ablagestapel.top_card}")
         return_card = self._draw_decision(deck, ablagestapel)
@@ -124,7 +136,9 @@ class UserPlayer(Player):
         super().__init__(name, genome)
         self.is_user = True
 
-    def _draw_decision(self, deck: Deck, ablagestapel: Ablagestapel) -> Card:
+    def _draw_decision(
+        self, deck: Deck, ablagestapel: Ablagestapel
+    ) -> Card | None:
         choice = (
             input(
                 f"Do you want to take the top card {ablagestapel.top_card}? (y/n): "
@@ -136,25 +150,41 @@ class UserPlayer(Player):
             return_card = ablagestapel.draw_card()
         else:
             return_card = deck.draw_card()
-        if config.DISPLAY_GAME:
-            print(f"You drew: {return_card}")
+            if config.DISPLAY_GAME:
+                print(f"You drew: {return_card}")
+            print("Do you want to keep this card?")
+            choice = (input("(y/n): ").strip().lower()) or "y"
+            if choice != "y":
+                ablagestapel.add_card(return_card)
+                return None
+
         return return_card
+
+    def _turn_over_decision(self) -> tuple[int, int]:
+        print("Which card do you want to turn over?")
+        row = int(input("Enter row (1-3): ")) - 1
+        col = int(input("Enter column (1-4): ")) - 1
+
+        while not self.grid.is_face_down_and_active(row, col):
+            print("Selected cell is already face up. Please try again.")
+            row = int(input("Enter row (1-3): ")) - 1
+            col = int(input("Enter column (1-4): ")) - 1
+        return row, col
 
     def _place_decision(
         self, card: Card, next_player_grid: NDArray[np.float64]
     ) -> tuple[int, int]:
-        # Implement user input logic here
-        # For now, just return the first available cell
-        while True:
-            print("Where do you want to place the card?")
+        print("Where do you want to place the card?")
+        row = int(input("Enter row (1-3): ")) - 1
+        col = int(input("Enter column (1-4): ")) - 1
+        while not self.grid._is_row_valid(row):
+            print("Invalid row. Please try again.")
             row = int(input("Enter row (1-3): ")) - 1
+        while not self.grid._is_column_valid(col):
+            print("Invalid column. Please try again.")
             col = int(input("Enter column (1-4): ")) - 1
-            try:
-                self.grid._is_row_valid(row)
-                self.grid._is_column_valid(col)
-                return row, col
-            except ValueError as e:
-                print(e)
+
+        return row, col
 
 
 class BaselinePlayer(Player):
@@ -174,12 +204,10 @@ class BaselinePlayer(Player):
     ) -> tuple[int, int]:
         # simple place decision: place in the first available cell
         values = self.grid._values()
-        face_up = self.grid.grid_face_up
-        eligible = face_up & (values > card.value)
-        eligible[:, ~self.grid.columns_active] = False
+        eligible = self.grid.face_up_and_active & (values > card.value)
         if np.any(eligible):
             row, col = np.unravel_index(
                 np.argmax(np.where(eligible, values, -np.inf)), values.shape
             )
             return int(row), int(col)
-        return self.grid.first_available_cell()
+        return self.grid.first_face_down_cell()

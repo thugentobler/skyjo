@@ -10,7 +10,7 @@ class Params:
         self.w_count = random.uniform(0, 1)
         self.w_col_count = random.uniform(0, 1)
         self.w_gain_topcard = random.uniform(0, 1)
-        self.take_discard_thresh = random.uniform(0, 1)
+        self.take_ablagestapel_thresh = random.uniform(0, 1)
 
         # weights for place decision making
         self.w_gain = random.uniform(0, 1)
@@ -18,8 +18,10 @@ class Params:
         self.w_col_bonus = random.uniform(0, 1)
         self.w_reveal = random.uniform(0, 1)
         self.w_breaks_match = random.uniform(0, 1)
-        self.place_card_thresh = random.uniform(0, 1)
         self.w_gain_next_player = random.uniform(0, 1)
+
+        # weights for turn over decision
+        self.discard_thresh = random.uniform(0, 1)
 
     def __iter__(self):
         return iter(vars(self))
@@ -40,5 +42,9 @@ class Genome:
     def load(self, filepath: str):
         with open(filepath, "r") as f:
             params_dict = json.load(f)
+        # Reset all params to 0 for backward compatibility
+        for key in vars(self.params):
+            setattr(self.params, key, 0)
+        # Update with loaded values
         for key, value in params_dict.items():
             setattr(self.params, key, value)
