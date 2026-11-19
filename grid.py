@@ -73,7 +73,7 @@ class Grid:
 
     def is_face_down_and_active(self, row: int, col: int) -> bool:
         if not self._is_row_valid(row) or not self._is_column_valid(col):
-            raise ValueError("Invalid row or column")
+            return False
         return not self._grid_face_up[row, col] and self.columns_active[col]
 
     def remove_column(self, col: int):
@@ -194,10 +194,10 @@ class Grid:
         return int(row), int(col)
 
     def _is_column_valid(self, column: int) -> bool:
-        return (0 <= column < COLS) and self.columns_active[column]
+        return bool((0 <= column < COLS) and self.columns_active[column])
 
     def _is_row_valid(self, row: int) -> bool:
-        return 0 <= row < ROWS
+        return bool(0 <= row < ROWS)
 
     def __getitem__(self, key: tuple[int, int]) -> Card | None:
         """Enable reading: card = grid[row, col]"""
