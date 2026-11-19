@@ -91,12 +91,23 @@ class Game:
         return result
 
 
-def load_latest_genome() -> Genome:
+def load_latest_genome(gen: int | None = None) -> Genome:
 
     files = glob.glob("./genomes/*.json")
     if not files:
         return Genome()
-    latest_file = max(files, key=os.path.getctime)
+
+    def get_generation(file):
+        # Extract the generation number from the filename
+        import re
+
+        match = re.search(r"genome_(\d+)_", file)
+        return int(match.group(1)) if match else -1
+
+    if gen is not None:
+        files = [f for f in files if get_generation(f) == gen]
+
+    latest_file = max(files, key=get_generation)
     genome = Genome()
     genome.load(latest_file)
     return genome

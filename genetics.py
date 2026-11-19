@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 
 import config
-from game import Game
+from game import Game, load_latest_genome
 from genome import Genome
 from player import BaselinePlayer, Player
 
@@ -25,14 +25,16 @@ def mutate(g: Genome, rate=0.1, sigma=0.1) -> Genome:
     return g
 
 
-def evaluate(genome: Genome, n_games=200, seed=None) -> float:
+def evaluate(
+    genome: Genome, enemy_genome: Genome, n_games=200, seed=None
+) -> float:
     if seed is not None:
         random.seed(seed)
     wins = 0
     for i in range(n_games):
         player = [
             Player(f"genome {i}", genome),
-            BaselinePlayer("Baseline"),
+            Player(f"enemy {i-1}", enemy_genome),
         ]
         config.DISPLAY_GAME = False
         game = Game(players=player)
@@ -46,13 +48,18 @@ def select_fittest(pop, k=5) -> Genome:
 
 
 def evolve(pop_size=50, generations=20):
-    population = [Genome() for _ in range(pop_size)]
+    start_genome: Genome = load_latest_genome(19)
+    population = [start_genome for _ in range(pop_size)]
+
+    enemy_genome: Genome = load_latest_genome(15)
 
     with ProcessPoolExecutor() as executor:
         for generation in range(generations):
             seeds = [random.getrandbits(128) for _ in population]
             print(f"Generation {generation}")
-            fitnesses = executor.map(evaluate, population, repeat(200), seeds)
+            fitnesses = executor.map(
+                evaluate, population, repeat(enemy_genome), repeat(200), seeds
+            )
             for genome, fitness in zip(population, fitnesses):
                 genome.fitness = fitness
 
@@ -73,7 +80,7 @@ def evolve(pop_size=50, generations=20):
 
             for g in elite:
                 g.save(
-                    f"./genomes/genome_{generation}_{population.index(g)}.json"
+                    f"./genomes/against_baseplayer/genome_{generation}_{population.index(g)}.json"
                 )
 
             print(f"Fitness of best genome: {population[0].fitness}")
