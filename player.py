@@ -91,10 +91,22 @@ class Player:
         else:
             return_card = deck.draw_card()
             # TODO: value the drawn card against the current grid state
-            if score > self.genome.params.discard_thresh:
-                # If the score is above the threshold, keep the card
-                return return_card
-            return None
+            score = self.genome.params.w_count * np.count_nonzero(
+                self.grid._values() == ablagestapel.top_card
+            ) + self.genome.params.w_col_count * np.count_nonzero(
+                np.sum(
+                    self.grid._values() == ablagestapel.top_card,
+                    axis=0,
+                )
+                >= 2
+            )
+
+            # If the score is below the threshold, choose a random face-down card
+            return (
+                return_card
+                if score > self.genome.params.discard_thresh
+                else None
+            )
 
     def place_card(
         self,

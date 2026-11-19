@@ -28,8 +28,8 @@ class Grid:
         self._grid_cards = np.array(cards, dtype=np.object_).reshape((3, 4))
 
     def place_card(self, row: int, col: int, card: Card) -> Card:
-        self._is_row_valid(row)
-        self._is_column_valid(col)
+        if not self._is_row_valid(row) or not self._is_column_valid(col):
+            raise ValueError("Invalid row or column")
         return_card = self._grid_cards[row, col]
         if return_card is None:
             raise ValueError("Cannot replace an empty grid cell")
@@ -43,8 +43,8 @@ class Grid:
         return return_card
 
     def flip_card(self, row: int, col: int):
-        self._is_row_valid(row)
-        self._is_column_valid(col)
+        if not self._is_row_valid(row) or not self._is_column_valid(col):
+            raise ValueError("Invalid row or column")
         self._grid_face_up[row, col] = True
 
     def display(self) -> str:
@@ -72,8 +72,8 @@ class Grid:
         return self._grid_face_up.copy()
 
     def is_face_down_and_active(self, row: int, col: int) -> bool:
-        self._is_row_valid(row)
-        self._is_column_valid(col)
+        if not self._is_row_valid(row) or not self._is_column_valid(col):
+            raise ValueError("Invalid row or column")
         return not self._grid_face_up[row, col] and self.columns_active[col]
 
     def remove_column(self, col: int):
@@ -160,8 +160,13 @@ class Grid:
             )
         else:
             values = np.full((ROWS, COLS), np.nan, dtype=np.float64)
-
-        return np.where(self.face_up_and_active, self._grid_cards, values)
+        # Extract the values from the grid cards, using np.nan for empty cells
+        grid_values = np.frompyfunc(
+            lambda card: card.value if isinstance(card, Card) else np.nan,
+            1,
+            1,
+        )(self._grid_cards)
+        return np.where(self.face_up_and_active, grid_values, values)
 
     @property
     def face_up_and_active(self) -> NDArray[np.bool_]:
@@ -173,7 +178,7 @@ class Grid:
 
     @property
     def is_full(self) -> bool:
-        return bool(self.face_up_and_active.all())
+        return bool(self._grid_face_up.all())
 
     def total_score(self) -> int:
         return int(np.nansum(self._values(with_face_down=False)))
@@ -188,21 +193,17 @@ class Grid:
         )
         return int(row), int(col)
 
-    def _is_column_valid(self, column: int) -> None:
-        if not (0 <= column < COLS):
-            raise ValueError("Invalid column")
-        if not self.columns_active[column]:
-            raise ValueError("Column is not active")
+    def _is_column_valid(self, column: int) -> bool:
+        return (0 <= column < COLS) and self.columns_active[column]
 
-    def _is_row_valid(self, row: int) -> None:
-        if not (0 <= row < ROWS):
-            raise ValueError("Invalid row")
+    def _is_row_valid(self, row: int) -> bool:
+        return 0 <= row < ROWS
 
     def __getitem__(self, key: tuple[int, int]) -> Card | None:
         """Enable reading: card = grid[row, col]"""
         row, col = key
-        self._is_column_valid(col)
-        self._is_row_valid(row)
+        if not self._is_column_valid(col) or not self._is_row_valid(row):
+            raise ValueError("Invalid row or column")
         if not self._grid_face_up[row, col]:
             return None
         return cast(Card | None, self._grid_cards[row, col])
@@ -210,6 +211,6 @@ class Grid:
     def __setitem__(self, key: tuple[int, int], value: Card | None) -> None:
         """Enable writing: grid[row, col] = card"""
         row, col = key
-        self._is_row_valid(row)
-        self._is_column_valid(col)
+        if not self._is_row_valid(row) or not self._is_column_valid(col):
+            raise ValueError("Invalid row or column")
         self._grid_cards[row, col] = value

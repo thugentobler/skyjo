@@ -40,6 +40,8 @@ class Game:
                 )
 
                 if player.grid.is_full:
+                    if config.DISPLAY_GAME:
+                        print("--- Last round! ---")
                     final_players = (
                         self.players[index + 1 :] + self.players[:index]
                     )
@@ -68,9 +70,9 @@ class Game:
                     return winner
 
     def __str__(self) -> str:
-        result = "-" * 10 + "\n"
+        # result = "-" * 10 + "\n"
         # first print the deck size and the ablage size and the value for the ablage
-        result += f"Deck count: {self.deck.count} \n"
+        result = f"Deck count: {self.deck.count} \n"
         result += f"Ablagestapel: {self.discard_pile}\n"
 
         for player in self.players:
@@ -115,7 +117,6 @@ def main():
         Player(f"Player {i+1}", load_latest_genome())
         for i in range(num_players)
     ]
-    players.append(UserPlayer(username))
 
     game = Game(players)
     game.play()
