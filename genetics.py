@@ -40,7 +40,8 @@ def evaluate(genome: Genome, n_games=200, seed=None) -> float:
     return wins / n_games
 
 
-def select_fittest(pop, k=3):
+def select_fittest(pop, k=5) -> Genome:
+    """Tournament selection: return the fittest among k randomly chosen genomes."""
     return max(random.sample(pop, k), key=lambda g: g.fitness)
 
 
@@ -57,7 +58,9 @@ def evolve(pop_size=50, generations=20):
 
             population.sort(key=lambda g: g.fitness, reverse=True)
             print(generation, population[0].fitness)
-            elite = population[:2]
+            # Keep the two overall best genomes unchanged; they can also be
+            # chosen as parents because selection below samples the full population.
+            elite = population[:3]
             children = [
                 mutate(
                     crossover(
